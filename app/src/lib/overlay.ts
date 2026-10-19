@@ -68,7 +68,7 @@ function drawBand(
 function drawLabel(wrapper: SVGGElement, x: number, topY: number, region: Region, color: string, onClick?: (id: string) => void) {
 	const scale = ALL_SCALES.find(s => s.name === region.scaleName);
 	const text = el('text', {
-		x, y: topY - 8, fill: color, 'font-size': 11, 'font-weight': 700,
+		x, y: topY - 4, fill: color, 'font-size': 11, 'font-weight': 700,
 		'font-family': 'system-ui, sans-serif', 'data-region': region.id,
 	});
 	text.classList.add('ps-label');
@@ -101,12 +101,20 @@ export function clearOverlays(svg: SVGSVGElement) {
 
 export function drawOverlays(svg: SVGSVGElement, input: OverlayInput) {
 	clearOverlays(svg);
+	// Top of each line's content (notes, tempo marks, chord symbols) measured before any labels are added,
+	// so labels sit above everything abcjs drew instead of colliding with it.
+	const lineTops = new Map<number, number>();
+	for (const w of svg.querySelectorAll<SVGGElement>('g.abcjs-staff-wrapper')) {
+		const m = /abcjs-l(\d+)/.exec(w.getAttribute('class') ?? '');
+		if (m) lineTops.set(Number(m[1]), w.getBBox().y);
+	}
 	for (const region of input.regions) {
 		const spanNotes = notesInSpan(input.notes, region);
 		const color = scaleColor(region.scaleName);
 		const band = drawBand(svg, region.line, spanNotes, color, 0.3, false, region.id);
 		if (!band) continue;
-		drawLabel(band.wrapper, band.x, band.topY, region, color, input.onLabelClick);
+		const labelBase = Math.min(band.topY, lineTops.get(region.line) ?? band.topY);
+		drawLabel(band.wrapper, band.x, labelBase, region, color, input.onLabelClick);
 		const scale = ALL_SCALES.find(s => s.name === region.scaleName);
 		if (scale) drawOutsideRings(band.wrapper, spanNotes, scale.chroma);
 	}

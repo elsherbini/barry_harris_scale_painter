@@ -66,7 +66,7 @@ export function attachDragSelect(svg: SVGSVGElement, notes: NoteInfo[], handlers
 		const at = lineAt(ev, wrappers);
 		if (!at) return;
 		drag = { line: at.line, wrapper: at.wrapper, x0: toLocal(ev, at.wrapper).x, moved: false };
-		lastKey = '';
+		lastKey = '\0'; // force the next emit, even if it repeats the previous selection
 		svg.setPointerCapture(ev.pointerId);
 		ev.preventDefault();
 	}

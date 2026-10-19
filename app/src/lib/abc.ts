@@ -16,4 +16,4 @@ M:4/4
 Q:1/4=120
 K:C
 C D E F G A B c | d c B A G F E D | G A B c d e f g | c2 z2 z4 |
-F _A c d _A F c d | e d c B A G F E | G ^G A _B B c ^c d | [c e g]4 z4 |`;
+F _A c d _A F c d | e d c B A G F E | G ^G A _B =B c ^c d | [c e g]4 z4 |`;
