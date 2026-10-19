@@ -1,7 +1,7 @@
 import type { NoteInfo } from './notes-index';
 import { notesInSpan } from './notes-index';
 import type { Region, Selection } from './regions';
-import { scaleColor, shortName, textColorOn } from './colors';
+import { scaleColor, shortName } from './colors';
 import { ALL_SCALES } from './scales';
 import { placeAbove, type Box } from './label-layout';
 
@@ -96,7 +96,7 @@ function drawLabel(
 	group.classList.add('ps-label');
 	group.style.cursor = 'pointer';
 	const text = el('text', {
-		x: x + LABEL_PAD_X, y: 0, fill: textColorOn(color), 'font-size': LABEL_FONT_SIZE, 'font-weight': 700,
+		x: x + LABEL_PAD_X, y: 0, fill: '#000000', stroke: 'none', 'font-size': LABEL_FONT_SIZE, 'font-weight': 700,
 		'font-family': 'system-ui, sans-serif', 'dominant-baseline': 'central',
 	});
 	text.textContent = scale ? shortName(scale) : region.scaleName;
