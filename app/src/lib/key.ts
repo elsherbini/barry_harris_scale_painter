@@ -1,4 +1,5 @@
 import { Pcset, Scale } from 'tonal';
+import { spellRoot, type Accidentals } from './spelling';
 
 export type KeyCenter = { root: string; mode: string };
 
@@ -36,4 +37,15 @@ export const MODE_OPTIONS: string[] = [
 	...Scale.modeNames('melodic minor').map(m => m[1]),
 ];
 
-export const ROOT_OPTIONS = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
+const ROOTS = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
+
+export function rootOptions(acc: Accidentals): string[] {
+	return ROOTS.map(r => spellRoot(r, acc));
+}
+
+/** Respell a key override's root to match the chosen accidentals; 'none' and null pass through. */
+export function respellKey<T extends KeyCenter | 'none' | null>(key: T, acc: Accidentals): T {
+	if (!key || key === 'none') return key;
+	const k = key as KeyCenter;
+	return { ...k, root: spellRoot(k.root, acc) } as T;
+}

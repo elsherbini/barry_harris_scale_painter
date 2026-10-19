@@ -1,12 +1,13 @@
 <script lang="ts">
 	import type { MatchGroup, ScaleMatch } from '$lib/match';
 	import { scaleColor, shortName } from '$lib/colors';
-	import { Pcset } from 'tonal';
+	import { pcName, scaleDisplayName, type Accidentals } from '$lib/spelling';
 
 	let {
 		groups,
 		selectedPcs,
 		hasKey,
+		accidentals = 'flat',
 		currentScaleName = null,
 		onHover,
 		onApply,
@@ -14,6 +15,7 @@
 		groups: MatchGroup[];
 		selectedPcs: number[];
 		hasKey: boolean;
+		accidentals?: Accidentals;
 		currentScaleName?: string | null;
 		onHover: (scaleName: string | null) => void;
 		onApply: (scaleName: string) => void;
@@ -28,17 +30,16 @@
 		return missing === 0 ? `Fits all ${total} notes` : `Fits ${hits} of ${total} notes`;
 	}
 
-	const PC_NAMES = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
+	const name = (pc: number) => pcName(pc, accidentals);
 
 	function noteCells(m: ScaleMatch): { name: string; hit: boolean }[] {
 		const pcs = m.scale.chroma.split('').map((c, i) => (c === '1' ? i : -1)).filter(i => i >= 0);
-		const names = Pcset.notes(m.scale.chroma);
-		return pcs.map((pc, i) => ({ name: names[i] ?? PC_NAMES[pc], hit: selectedPcs.includes(pc) }));
+		return pcs.map(pc => ({ name: name(pc), hit: selectedPcs.includes(pc) }));
 	}
 </script>
 
 <div class="space-y-3 text-sm">
-	<p class="text-neutral-600">Selected: {selectedPcs.map(pc => PC_NAMES[pc]).join(' ')}</p>
+	<p class="text-neutral-600">Selected: {selectedPcs.map(name).join(' ')}</p>
 	{#if groups.length > 1}
 		<label class="flex items-center gap-2 cursor-pointer">
 			<input type="checkbox" bind:checked={showAll} />
@@ -63,8 +64,8 @@
 							onclick={() => onApply(m.scale.name)}
 						>
 							<div class="flex items-baseline gap-2">
-								<span class="font-medium">{shortName(m.scale)}</span>
-								<span class="text-xs text-neutral-500">{m.scale.name}</span>
+								<span class="font-medium">{shortName(m.scale, accidentals)}</span>
+								<span class="text-xs text-neutral-500">{scaleDisplayName(m.scale, accidentals)}</span>
 								{#if hasKey && m.keyOverlap !== null}
 									<span class="ml-auto text-xs text-neutral-500">key {m.keyOverlap}/7</span>
 								{/if}
@@ -74,7 +75,7 @@
 									<span class:font-bold={cell.hit} class:text-neutral-400={!cell.hit}>{cell.name}</span>
 								{/each}
 								{#if m.misses.length}
-									<span class="text-red-600 ml-2">outside: {m.misses.map(pc => PC_NAMES[pc]).join(' ')}</span>
+									<span class="text-red-600 ml-2">outside: {m.misses.map(name).join(' ')}</span>
 								{/if}
 							</div>
 						</button>

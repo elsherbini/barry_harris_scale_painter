@@ -1,9 +1,10 @@
 import type { NoteInfo } from './notes-index';
 import { notesInSpan } from './notes-index';
-import type { Region, Selection } from './regions';
+import { sameSpan, type Region, type Selection } from './regions';
 import { scaleColor, shortName } from './colors';
 import { ALL_SCALES } from './scales';
 import { placeAbove, type Box } from './label-layout';
+import type { Accidentals } from './spelling';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const PAD_Y = 4;
@@ -14,13 +15,16 @@ const LABEL_PAD_X = 6;        // horizontal padding inside the pill
 const LABEL_HEIGHT = 16;      // pill height
 const LABEL_GAP = 3;          // gap between pill bottom and the staff / obstacle below
 const LABEL_STEP = LABEL_HEIGHT + LABEL_GAP;
+const DELETE_SIZE = 12;        // diameter of the x button shown on the selected region's pill
 
 export type OverlayInput = {
 	notes: NoteInfo[];
 	regions: Region[];
 	selection: Selection | null;
 	previewScaleName: string | null;   // hovered candidate: tints the selection in that color
+	accidentals?: Accidentals;         // how pill labels spell their root
 	onLabelClick?: (regionId: string) => void;
+	onLabelDelete?: (regionId: string) => void;   // the selected region's pill shows an x that calls this
 };
 
 function el<K extends keyof SVGElementTagNameMap>(tag: K, attrs: Record<string, string | number>): SVGElementTagNameMap[K] {
@@ -89,7 +93,7 @@ function obstacleBoxes(wrapper: SVGGElement): Box[] {
  */
 function drawLabel(
 	wrapper: SVGGElement, x: number, staffTopY: number, region: Region, color: string,
-	obstacles: Box[], onClick?: (id: string) => void
+	obstacles: Box[], acc: Accidentals, onClick?: (id: string) => void, onDelete?: (id: string) => void
 ): Box {
 	const scale = ALL_SCALES.find(s => s.name === region.scaleName);
 	const group = el('g', { 'data-region': region.id });
@@ -99,18 +103,37 @@ function drawLabel(
 		x: x + LABEL_PAD_X, y: 0, fill: '#000000', stroke: 'none', 'font-size': LABEL_FONT_SIZE, 'font-weight': 700,
 		'font-family': 'system-ui, sans-serif', 'dominant-baseline': 'central',
 	});
-	text.textContent = scale ? shortName(scale) : region.scaleName;
+	text.textContent = scale ? shortName(scale, acc) : region.scaleName;
 	const pill = el('rect', { x, y: 0, width: 0, height: LABEL_HEIGHT, rx: LABEL_HEIGHT / 2, fill: color });
 	group.append(pill, text);
 	if (onClick) group.addEventListener('click', () => onClick(region.id));
 	wrapper.appendChild(group);
-	const width = text.getBBox().width + 2 * LABEL_PAD_X;
+	const textWidth = text.getBBox().width;
+	const width = textWidth + 2 * LABEL_PAD_X + (onDelete ? DELETE_SIZE + LABEL_PAD_X / 2 : 0);
 	const wanted: Box = { x, y: staffTopY - LABEL_GAP - LABEL_HEIGHT, width, height: LABEL_HEIGHT };
 	const placed = placeAbove(wanted, obstacles, LABEL_STEP);
 	pill.setAttribute('width', String(width));
 	pill.setAttribute('y', String(placed.y));
 	text.setAttribute('y', String(placed.y + LABEL_HEIGHT / 2));
+	if (onDelete) group.appendChild(deleteButton(x + width - LABEL_PAD_X - DELETE_SIZE, placed.y + (LABEL_HEIGHT - DELETE_SIZE) / 2, region.id, onDelete));
 	return placed;
+}
+
+/** A small x in a dark circle; clicking it removes the region instead of reselecting it. */
+function deleteButton(x: number, y: number, regionId: string, onDelete: (id: string) => void): SVGGElement {
+	const g = el('g', {});
+	g.classList.add('ps-label-delete');
+	g.setAttribute('role', 'button');
+	g.setAttribute('aria-label', 'Remove label');
+	const r = DELETE_SIZE / 2;
+	const circle = el('circle', { cx: x + r, cy: y + r, r, fill: '#000000', 'fill-opacity': 0.75 });
+	const cross = el('path', {
+		d: `M${x + r - 3} ${y + r - 3} L${x + r + 3} ${y + r + 3} M${x + r + 3} ${y + r - 3} L${x + r - 3} ${y + r + 3}`,
+		stroke: '#ffffff', 'stroke-width': 1.5, 'stroke-linecap': 'round', fill: 'none',
+	});
+	g.append(circle, cross);
+	g.addEventListener('click', (ev) => { ev.stopPropagation(); onDelete(regionId); });
+	return g;
 }
 
 function drawOutsideRings(wrapper: SVGGElement, spanNotes: NoteInfo[], chroma: string) {
@@ -150,7 +173,9 @@ export function drawOverlays(svg: SVGSVGElement, input: OverlayInput) {
 		const band = drawBand(svg, region.line, spanNotes, color, 0.3, false, region.id);
 		if (!band) continue;
 		const lineObstacles = obstaclesFor(region.line, band.wrapper);
-		const placed = drawLabel(band.wrapper, band.x, band.topY, region, color, lineObstacles, input.onLabelClick);
+		const isCurrent = input.selection !== null && sameSpan(region, input.selection);
+		const placed = drawLabel(band.wrapper, band.x, band.topY, region, color, lineObstacles, input.accidentals ?? 'flat',
+			input.onLabelClick, isCurrent ? input.onLabelDelete : undefined);
 		lineObstacles.push(placed);
 		const scale = ALL_SCALES.find(s => s.name === region.scaleName);
 		if (scale) drawOutsideRings(band.wrapper, spanNotes, scale.chroma);

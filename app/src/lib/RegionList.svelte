@@ -2,19 +2,22 @@
 	import type { Region } from '$lib/regions';
 	import { scaleColor, shortName } from '$lib/colors';
 	import { ALL_SCALES } from '$lib/scales';
+	import type { Accidentals } from '$lib/spelling';
 
 	let {
 		regions,
+		accidentals = 'flat',
 		onSelect,
 		onDelete,
 	}: {
 		regions: Region[];
+		accidentals?: Accidentals;
 		onSelect: (region: Region) => void;
 		onDelete: (regionId: string) => void;
 	} = $props();
 
 	let sorted = $derived([...regions].sort((a, b) => a.line - b.line || a.start - b.start));
-	const nameOf = (r: Region) => { const s = ALL_SCALES.find(s => s.name === r.scaleName); return s ? shortName(s) : r.scaleName; };
+	const nameOf = (r: Region) => { const s = ALL_SCALES.find(s => s.name === r.scaleName); return s ? shortName(s, accidentals) : r.scaleName; };
 </script>
 
 <div class="space-y-2 text-sm">

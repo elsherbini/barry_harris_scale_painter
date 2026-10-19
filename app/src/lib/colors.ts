@@ -1,4 +1,5 @@
 import type { BarryHarrisScale } from './scales';
+import { spellRoot, type Accidentals } from './spelling';
 
 // Colors from reference_apps/filter_scales/scripts/tag-svg.js (the Excalidraw scale diagram).
 const FAMILIES: Record<string, string[]> = {
@@ -32,6 +33,6 @@ const SUFFIX: Record<BarryHarrisScale['type'], string> = {
 	octatonic: ' oct',
 };
 
-export function shortName(scale: BarryHarrisScale): string {
-	return scale.root + SUFFIX[scale.type];
+export function shortName(scale: BarryHarrisScale, acc: Accidentals = 'flat'): string {
+	return spellRoot(scale.root, acc) + SUFFIX[scale.type];
 }

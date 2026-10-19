@@ -11,6 +11,7 @@
 	import { attachDragSelect } from '$lib/drag-select';
 	import { drawOverlays } from '$lib/overlay';
 	import type { Region, Selection } from '$lib/regions';
+	import type { Accidentals } from '$lib/spelling';
 
 	let {
 		abc,
@@ -19,8 +20,10 @@
 		regions,
 		selection,
 		previewScaleName = null,
+		accidentals = 'flat',
 		onSelect,
 		onLabelClick,
+		onLabelDelete,
 		onRendered,
 	}: {
 		abc: string;
@@ -29,8 +32,10 @@
 		regions: Region[];
 		selection: Selection | null;
 		previewScaleName?: string | null;
+		accidentals?: Accidentals;
 		onSelect: (sel: Selection | null) => void;
 		onLabelClick?: (regionId: string) => void;
+		onLabelDelete?: (regionId: string) => void;
 		onRendered?: (info: RenderInfo) => void;
 	} = $props();
 
@@ -67,15 +72,15 @@
 		});
 	});
 
-	// Redraw overlays whenever regions / selection / preview change or after a re-render.
+	// Redraw overlays whenever regions / selection / preview / spelling change or after a re-render.
 	$effect(() => {
 		renderCount;
 		const currentNotes = notes;
-		const input = { notes: currentNotes, regions, selection, previewScaleName };
+		const input = { notes: currentNotes, regions, selection, previewScaleName, accidentals };
 		if (!container) return;
 		const svg = container.querySelector('svg') as SVGSVGElement | null;
 		if (!svg) return;
-		untrack(() => drawOverlays(svg, { ...input, onLabelClick: (id) => onLabelClick?.(id) }));
+		untrack(() => drawOverlays(svg, { ...input, onLabelClick: (id) => onLabelClick?.(id), onLabelDelete: (id) => onLabelDelete?.(id) }));
 	});
 </script>
 

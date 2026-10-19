@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { keyFromAbc, keyChroma, MODE_OPTIONS } from './key';
+import { keyFromAbc, keyChroma, keyNotes, MODE_OPTIONS, rootOptions, respellKey } from './key';
 
 describe('keyFromAbc', () => {
 	it('maps abcjs key signatures to tonal root + mode', () => {
@@ -30,5 +30,26 @@ describe('MODE_OPTIONS', () => {
 		expect(MODE_OPTIONS[1]).toBe('minor');
 		expect(MODE_OPTIONS).toContain('altered');
 		expect(MODE_OPTIONS).toContain('harmonic minor');
+	});
+});
+
+describe('rootOptions', () => {
+	it('offers the twelve roots spelled with flats or sharps', () => {
+		expect(rootOptions('flat')).toEqual(['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B']);
+		expect(rootOptions('sharp')).toEqual(['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']);
+	});
+});
+
+describe('respellKey', () => {
+	it('moves a chosen key to the enharmonic root so its notes read in the chosen accidentals', () => {
+		const sharp = respellKey({ root: 'Db', mode: 'minor' }, 'sharp');
+		expect(sharp).toEqual({ root: 'C#', mode: 'minor' });
+		expect(keyNotes(sharp)).toEqual(['C#', 'D#', 'E', 'F#', 'G#', 'A', 'B']);
+		expect(respellKey({ root: 'F#', mode: 'major' }, 'flat')).toEqual({ root: 'Gb', mode: 'major' });
+	});
+	it('leaves natural roots and non-key overrides alone', () => {
+		expect(respellKey({ root: 'A', mode: 'minor' }, 'sharp')).toEqual({ root: 'A', mode: 'minor' });
+		expect(respellKey(null, 'sharp')).toBeNull();
+		expect(respellKey('none', 'sharp')).toBe('none');
 	});
 });

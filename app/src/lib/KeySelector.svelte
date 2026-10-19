@@ -1,12 +1,15 @@
 <script lang="ts">
-	import { MODE_OPTIONS, ROOT_OPTIONS, keyNotes, type KeyCenter } from '$lib/key';
+	import { MODE_OPTIONS, rootOptions, keyNotes, type KeyCenter } from '$lib/key';
+	import { samePitchClass, type Accidentals } from '$lib/spelling';
 
 	let {
 		abcKey,
 		override,
+		accidentals = 'flat',
 		onChange,
 	}: {
 		abcKey: KeyCenter | null;
+		accidentals?: Accidentals;
 		override: KeyCenter | 'none' | null;
 		onChange: (next: KeyCenter | 'none' | null) => void;
 	} = $props();
@@ -36,8 +39,9 @@
 		<button class="underline disabled:opacity-40" onclick={() => onChange('none')} disabled={override === 'none'}>none</button>
 	</div>
 	<div class="flex flex-wrap gap-1">
-		{#each ROOT_OPTIONS as r}
-			<button class="px-2 py-0.5 border rounded" class:bg-neutral-800={root === r} class:text-white={root === r} onclick={() => pickRoot(r)}>{r}</button>
+		{#each rootOptions(accidentals) as r}
+			{@const active = root !== null && samePitchClass(root, r)}
+			<button class="px-2 py-0.5 border rounded" class:bg-neutral-800={active} class:text-white={active} onclick={() => pickRoot(r)}>{r}</button>
 		{/each}
 	</div>
 	<select class="border rounded px-2 py-1 w-full" value={mode} onchange={(e) => pickMode((e.target as HTMLSelectElement).value)} disabled={!root}>

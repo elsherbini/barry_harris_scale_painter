@@ -28,4 +28,8 @@ describe('shortName', () => {
 		expect(shortName(byName('C Dom7b5 Diminished'))).toBe('C7b5 dim');
 		expect(shortName(byName('Db Octatonic'))).toBe('Db oct');
 	});
+	it('respells the root as a sharp on request, leaving the suffix alone', () => {
+		expect(shortName(byName('Bb Dom7 Diminished'), 'sharp')).toBe('A#7 dim');
+		expect(shortName(byName('C Dom7b5 Diminished'), 'sharp')).toBe('C7b5 dim');
+	});
 });

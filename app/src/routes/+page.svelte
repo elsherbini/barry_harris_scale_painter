@@ -1,11 +1,12 @@
 <script lang="ts">
 	import StaffView, { type ColorMode, type RenderInfo } from '$lib/StaffView.svelte';
+	import type { Accidentals } from '$lib/spelling';
 	import KeySelector from '$lib/KeySelector.svelte';
 	import CandidateList from '$lib/CandidateList.svelte';
 	import RegionList from '$lib/RegionList.svelte';
 	import Playback from '$lib/Playback.svelte';
 	import { DEFAULT_ABC } from '$lib/abc';
-	import { keyFromAbc, keyChroma, type KeyCenter } from '$lib/key';
+	import { keyFromAbc, keyChroma, respellKey, type KeyCenter } from '$lib/key';
 	import { matchScales } from '$lib/match';
 	import { ALL_SCALES } from '$lib/scales';
 	import { notesInSpan, selectedPitchClasses, lineOnsets, type NoteInfo } from '$lib/notes-index';
@@ -18,6 +19,7 @@
 	let abc = $state(DEFAULT_ABC);
 	let view = $state<View>('traditional');
 	let colorMode = $state<ColorMode>('bw');
+	let accidentals = $state<Accidentals>('flat');
 	let editorOpen = $state(true);
 
 	let regions = $state<Region[]>([]);
@@ -61,14 +63,20 @@
 		selection = null;
 	}
 
+	function setAccidentals(acc: Accidentals) {
+		accidentals = acc;
+		keyOverride = respellKey(keyOverride, acc);   // a chosen Db minor becomes C# minor, the ABC key stays as written
+	}
+
 	function selectRegion(id: string) {
 		const r = regions.find(r => r.id === id);
 		if (r) selection = { line: r.line, start: r.start, end: r.end };
 	}
 
 	function deleteRegion(id: string) {
+		const wasCurrent = currentRegion?.id === id;   // read before the filter, which would reset currentRegion
 		regions = regions.filter(r => r.id !== id);
-		if (currentRegion?.id === id) selection = null;
+		if (wasCurrent) selection = null;
 	}
 </script>
 
@@ -104,25 +112,33 @@
 	<div class="grid gap-4" style="grid-template-columns: minmax(0, 1fr) 320px;">
 		<div class="space-y-4">
 			{#if view !== 'diminished'}
-				<StaffView {abc} clef="treble" {colorMode} {regions} {selection} {previewScaleName}
-					onSelect={(s) => (selection = s)} onLabelClick={selectRegion}
+				<StaffView {abc} clef="treble" {colorMode} {regions} {selection} {previewScaleName} {accidentals}
+					onSelect={(s) => (selection = s)} onLabelClick={selectRegion} onLabelDelete={deleteRegion}
 					onRendered={(info) => { trebleRender = info; afterRender(info); }} />
 			{/if}
 			{#if view !== 'traditional'}
-				<StaffView {abc} clef="diminished" {colorMode} {regions} {selection} {previewScaleName}
-					onSelect={(s) => (selection = s)} onLabelClick={selectRegion}
+				<StaffView {abc} clef="diminished" {colorMode} {regions} {selection} {previewScaleName} {accidentals}
+					onSelect={(s) => (selection = s)} onLabelClick={selectRegion} onLabelDelete={deleteRegion}
 					onRendered={(info) => { dimRender = info; afterRender(info); }} />
 			{/if}
 		</div>
 		<aside class="border rounded p-3 text-sm bg-white space-y-3 sticky top-4 self-start max-h-[calc(100vh-2rem)] overflow-y-auto">
-			<KeySelector {abcKey} override={keyOverride} onChange={(k) => (keyOverride = k)} />
+			<div class="flex items-center gap-1">
+				<span class="text-neutral-500 mr-1">Spelling:</span>
+				{#each [['flat', '♭'], ['sharp', '♯']] as [acc, glyph]}
+					<button class="px-2 py-0.5 border rounded" class:bg-neutral-800={accidentals === acc} class:text-white={accidentals === acc}
+						aria-label={acc === 'flat' ? 'Spell with flats' : 'Spell with sharps'} aria-pressed={accidentals === acc}
+						onclick={() => setAccidentals(acc as Accidentals)}>{glyph}</button>
+				{/each}
+			</div>
+			<KeySelector {abcKey} override={keyOverride} {accidentals} onChange={(k) => (keyOverride = k)} />
 			<hr />
 			{#if selection && selectedPcs.length}
-				<CandidateList {groups} {selectedPcs} hasKey={!!effectiveKeyChroma}
+				<CandidateList {groups} {selectedPcs} {accidentals} hasKey={!!effectiveKeyChroma}
 					currentScaleName={currentRegion?.scaleName ?? null}
 					onHover={(n) => (previewScaleName = n)} onApply={applyScale} />
 			{:else}
-				<RegionList {regions}
+				<RegionList {regions} {accidentals}
 					onSelect={(r) => (selection = { line: r.line, start: r.start, end: r.end })}
 					onDelete={deleteRegion} />
 			{/if}
