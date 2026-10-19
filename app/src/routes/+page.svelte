@@ -11,8 +11,10 @@
 	import { ALL_SCALES } from '$lib/scales';
 	import { notesInSpan, selectedPitchClasses, lineOnsets, type NoteInfo } from '$lib/notes-index';
 	import { applyRegion, newRegionId, sameSpan, type Region, type Selection } from '$lib/regions';
+	import { decodeState, type ShareState, type View } from '$lib/share';
+	import { createFragmentWriter, readFragment } from '$lib/share-url';
+	import ShareButton from '$lib/ShareButton.svelte';
 
-	type View = 'traditional' | 'diminished' | 'side-by-side';
 	const VIEWS: View[] = ['traditional', 'diminished', 'side-by-side'];
 	const COLOR_MODES: ColorMode[] = ['metaharmony', 'bw', 'elements'];
 
@@ -30,6 +32,30 @@
 	let abcKey = $state<KeyCenter | null>(null);
 	let keyOverride = $state<KeyCenter | 'none' | null>(null);
 	let effectiveKey = $derived(keyOverride === 'none' ? null : (keyOverride ?? abcKey));
+
+	// The share link lives in the URL fragment. Read it before the first render so the default tune
+	// never flashes; from then on mirror the shareable state back into the fragment.
+	let ready = $state(false);
+	const fragment = createFragmentWriter(300);
+	let shareState = $derived<ShareState>({
+		abc, regions: regions.map(r => ({ line: r.line, start: r.start, end: r.end, scaleName: r.scaleName })),
+		view, colors: colorMode, acc: accidentals, key: keyOverride,
+	});
+	decodeState(readFragment() ?? '').then(shared => {
+		if (shared) {
+			abc = shared.abc;
+			regions = shared.regions.map(r => ({ ...r, id: newRegionId() }));
+			view = shared.view;
+			colorMode = shared.colors;
+			accidentals = shared.acc;
+			keyOverride = shared.key;
+		}
+		ready = true;
+	});
+	$effect(() => {
+		const s = shareState;
+		if (ready) fragment.update(s);
+	});
 	let effectiveKeyChroma = $derived(keyChroma(effectiveKey));
 
 	let trebleRender = $state.raw<RenderInfo | null>(null);
@@ -107,8 +133,10 @@
 			{/each}
 		</div>
 		<Playback {primary} {secondary} />
+		<ShareButton beforeCopy={() => fragment.flush()} />
 	</div>
 
+	{#if ready}
 	<div class="grid gap-4" style="grid-template-columns: minmax(0, 1fr) 320px;">
 		<div class="space-y-4">
 			{#if view !== 'diminished'}
@@ -144,4 +172,5 @@
 			{/if}
 		</aside>
 	</div>
+	{/if}
 </main>
