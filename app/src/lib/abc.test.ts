@@ -16,8 +16,17 @@ describe('makeDimAbc', () => {
 });
 
 describe('DEFAULT_ABC', () => {
-	it('has a key and at least two lines of music', () => {
-		expect(DEFAULT_ABC).toMatch(/^K:/m);
+	it('is Für Elise with a treble and a bass voice', () => {
+		expect(DEFAULT_ABC).toMatch(/^X:1$/m);
+		expect(DEFAULT_ABC).toMatch(/^T:Für Elise$/m);
+		expect(DEFAULT_ABC).toMatch(/^K:Am$/m);
+		expect(DEFAULT_ABC).toMatch(/^V:2 bass$/m);
 		expect(DEFAULT_ABC.split('\n').filter(l => l.includes('|')).length).toBeGreaterThanOrEqual(2);
+	});
+
+	it('moves both Für Elise voices onto diminished clefs', () => {
+		const dim = makeDimAbc(DEFAULT_ABC);
+		expect(dim).toMatch(/^K:Am clef=diminished$/m);
+		expect(dim).toMatch(/^V:2 diminished-8$/m);
 	});
 });

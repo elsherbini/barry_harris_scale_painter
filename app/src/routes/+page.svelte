@@ -16,8 +16,8 @@
 	const COLOR_MODES: ColorMode[] = ['metaharmony', 'bw', 'elements'];
 
 	let abc = $state(DEFAULT_ABC);
-	let view = $state<View>('side-by-side');
-	let colorMode = $state<ColorMode>('metaharmony');
+	let view = $state<View>('traditional');
+	let colorMode = $state<ColorMode>('bw');
 	let editorOpen = $state(true);
 
 	let regions = $state<Region[]>([]);
@@ -104,7 +104,7 @@
 	<div class="grid gap-4" style="grid-template-columns: minmax(0, 1fr) 320px;">
 		<div class="space-y-4">
 			{#if view !== 'diminished'}
-				<StaffView {abc} clef="treble" {regions} {selection} {previewScaleName}
+				<StaffView {abc} clef="treble" {colorMode} {regions} {selection} {previewScaleName}
 					onSelect={(s) => (selection = s)} onLabelClick={selectRegion}
 					onRendered={(info) => { trebleRender = info; afterRender(info); }} />
 			{/if}

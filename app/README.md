@@ -15,7 +15,7 @@ npm run dev -- --open
 
 ## How it works
 
-- **abcjs fork.** Notation is rendered with `https://github.com/elsherbini/abcjs` (branch `main`), which adds `clef=diminished` and the `diminishedColors` render option. `src/lib/abc.ts` rewrites the ABC for the diminished view.
+- **abcjs fork.** Notation is rendered with `https://github.com/elsherbini/abcjs` (branch `main`), which adds `clef=diminished`, the `diminishedColors` palette option and `colorNoteheads`, which paints noteheads by diminished family on every clef so the traditional and diminished staves share one color scheme. `src/lib/abc.ts` rewrites the ABC for the diminished view.
 - **Note index.** After each render, `tune.setUpAudio()` stamps every sounding note with key-signature-resolved MIDI pitches and an onset time. `src/lib/notes-index.ts` turns that into a flat list with each note's SVG element and bounding box.
 - **Selection.** `src/lib/drag-select.ts` listens for pointer events on the SVG. A horizontal drag on one system line selects every note (all voices and staves) whose x-center falls in the dragged range. Click a note to select just that onset, click empty space or press Escape to clear.
 - **Regions.** A labeled passage is `{ line, start, end, scaleName }` keyed by onset time, so the same region draws on both the traditional and diminished staves. Painting over an existing region trims, splits or removes it (`src/lib/regions.ts`).

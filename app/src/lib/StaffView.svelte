@@ -51,7 +51,8 @@
 			responsive: 'resize',
 			add_classes: true,
 			staffwidth: 760,
-			...(clef === 'diminished' ? { diminishedColors: colorMode } : {}),
+			diminishedColors: colorMode,
+			colorNoteheads: true, // family colors on the traditional staff too, not only the diminished one
 		})[0];
 		if (!tune) return;
 		tune.setUpAudio({});
