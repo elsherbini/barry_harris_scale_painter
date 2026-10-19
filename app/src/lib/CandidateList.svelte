@@ -19,8 +19,14 @@
 		onApply: (scaleName: string) => void;
 	} = $props();
 
-	let shown = $state(1);
-	$effect(() => { groups; shown = 1; });
+	let showAll = $state(false);
+	let visibleGroups = $derived(showAll ? groups : groups.slice(0, 1));
+
+	function groupTitle(missing: number): string {
+		const total = selectedPcs.length;
+		const hits = total - missing;
+		return missing === 0 ? `Fits all ${total} notes` : `Fits ${hits} of ${total} notes`;
+	}
 
 	const PC_NAMES = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
 
@@ -33,10 +39,16 @@
 
 <div class="space-y-3 text-sm">
 	<p class="text-neutral-600">Selected: {selectedPcs.map(pc => PC_NAMES[pc]).join(' ')}</p>
-	{#each groups.slice(0, shown) as group}
+	{#if groups.length > 1}
+		<label class="flex items-center gap-2 cursor-pointer">
+			<input type="checkbox" bind:checked={showAll} />
+			<span>Show all Barry Harris scales</span>
+		</label>
+	{/if}
+	{#each visibleGroups as group (group.missing)}
 		<section>
 			<h3 class="font-semibold mb-1">
-				{group.missing === 0 ? 'Fits all notes' : `Missing ${group.missing} note${group.missing > 1 ? 's' : ''}`}
+				{groupTitle(group.missing)}
 				<span class="text-neutral-400 font-normal">({group.matches.length})</span>
 			</h3>
 			<ul class="space-y-1">
@@ -71,7 +83,4 @@
 			</ul>
 		</section>
 	{/each}
-	{#if shown < groups.length}
-		<button class="underline" onclick={() => shown++}>Show scales missing {groups[shown].missing} note{groups[shown].missing > 1 ? 's' : ''}</button>
-	{/if}
 </div>

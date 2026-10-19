@@ -114,7 +114,7 @@
 					onRendered={(info) => { dimRender = info; afterRender(info); }} />
 			{/if}
 		</div>
-		<aside class="border rounded p-3 text-sm bg-white space-y-3">
+		<aside class="border rounded p-3 text-sm bg-white space-y-3 sticky top-4 self-start max-h-[calc(100vh-2rem)] overflow-y-auto">
 			<KeySelector {abcKey} override={keyOverride} onChange={(k) => (keyOverride = k)} />
 			<hr />
 			{#if selection && selectedPcs.length}
