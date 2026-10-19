@@ -3,11 +3,15 @@ import { notesInSpan } from './notes-index';
 import type { Region, Selection } from './regions';
 import { scaleColor, shortName } from './colors';
 import { ALL_SCALES } from './scales';
+import { placeAbove, type Box } from './label-layout';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const PAD_Y = 4;
 const PAD_X = 3;
 const SELECTION_COLOR = '#0a9ecc';
+const LABEL_FONT_SIZE = 11;
+const LABEL_GAP = 3;          // gap between label bottom and the staff / obstacle below
+const LABEL_STEP = LABEL_FONT_SIZE + LABEL_GAP;
 
 export type OverlayInput = {
 	notes: NoteInfo[];
@@ -65,10 +69,29 @@ function drawBand(
 	return { wrapper, x: range.x, topY };
 }
 
-function drawLabel(wrapper: SVGGElement, x: number, topY: number, region: Region, color: string, onClick?: (id: string) => void) {
+/** Bounding boxes of everything abcjs drew in the wrapper (overlays excluded). */
+function obstacleBoxes(wrapper: SVGGElement): Box[] {
+	const boxes: Box[] = [];
+	for (const e of wrapper.querySelectorAll<SVGGraphicsElement>('text, path, rect, circle, ellipse, line, polygon')) {
+		if (e.classList.contains('ps-overlay')) continue;
+		const b = e.getBBox();
+		if (b.width === 0 && b.height === 0) continue;
+		boxes.push({ x: b.x, y: b.y, width: b.width, height: b.height });
+	}
+	return boxes;
+}
+
+/**
+ * Draws a region label, starting just above the staff and moving up only as far as needed
+ * to clear abcjs content (dynamics, chord symbols, high notes) and earlier labels.
+ */
+function drawLabel(
+	wrapper: SVGGElement, x: number, staffTopY: number, region: Region, color: string,
+	obstacles: Box[], onClick?: (id: string) => void
+): Box {
 	const scale = ALL_SCALES.find(s => s.name === region.scaleName);
 	const text = el('text', {
-		x, y: topY - 4, fill: color, 'font-size': 11, 'font-weight': 700,
+		x, y: 0, fill: color, 'font-size': LABEL_FONT_SIZE, 'font-weight': 700,
 		'font-family': 'system-ui, sans-serif', 'data-region': region.id,
 	});
 	text.classList.add('ps-label');
@@ -76,6 +99,11 @@ function drawLabel(wrapper: SVGGElement, x: number, topY: number, region: Region
 	text.textContent = scale ? shortName(scale) : region.scaleName;
 	if (onClick) text.addEventListener('click', () => onClick(region.id));
 	wrapper.appendChild(text);
+	const width = text.getBBox().width;
+	const wanted: Box = { x, y: staffTopY - LABEL_GAP - LABEL_FONT_SIZE, width, height: LABEL_FONT_SIZE };
+	const placed = placeAbove(wanted, obstacles, LABEL_STEP);
+	text.setAttribute('y', String(placed.y + LABEL_FONT_SIZE - 2)); // baseline; descenders are rare in scale names
+	return placed;
 }
 
 function drawOutsideRings(wrapper: SVGGElement, spanNotes: NoteInfo[], chroma: string) {
@@ -101,20 +129,22 @@ export function clearOverlays(svg: SVGSVGElement) {
 
 export function drawOverlays(svg: SVGSVGElement, input: OverlayInput) {
 	clearOverlays(svg);
-	// Top of each line's content (notes, tempo marks, chord symbols) measured before any labels are added,
-	// so labels sit above everything abcjs drew instead of colliding with it.
-	const lineTops = new Map<number, number>();
-	for (const w of svg.querySelectorAll<SVGGElement>('g.abcjs-staff-wrapper')) {
-		const m = /abcjs-l(\d+)/.exec(w.getAttribute('class') ?? '');
-		if (m) lineTops.set(Number(m[1]), w.getBBox().y);
-	}
+	// Obstacles per line, measured before any overlays are added. Labels placed on a line
+	// are appended so later labels on the same line dodge earlier ones.
+	const obstacles = new Map<number, Box[]>();
+	const obstaclesFor = (line: number, wrapper: SVGGElement) => {
+		let o = obstacles.get(line);
+		if (!o) { o = obstacleBoxes(wrapper); obstacles.set(line, o); }
+		return o;
+	};
 	for (const region of input.regions) {
 		const spanNotes = notesInSpan(input.notes, region);
 		const color = scaleColor(region.scaleName);
 		const band = drawBand(svg, region.line, spanNotes, color, 0.3, false, region.id);
 		if (!band) continue;
-		const labelBase = Math.min(band.topY, lineTops.get(region.line) ?? band.topY);
-		drawLabel(band.wrapper, band.x, labelBase, region, color, input.onLabelClick);
+		const lineObstacles = obstaclesFor(region.line, band.wrapper);
+		const placed = drawLabel(band.wrapper, band.x, band.topY, region, color, lineObstacles, input.onLabelClick);
+		lineObstacles.push(placed);
 		const scale = ALL_SCALES.find(s => s.name === region.scaleName);
 		if (scale) drawOutsideRings(band.wrapper, spanNotes, scale.chroma);
 	}
