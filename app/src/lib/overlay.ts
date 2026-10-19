@@ -1,7 +1,7 @@
 import type { NoteInfo } from './notes-index';
 import { notesInSpan } from './notes-index';
 import type { Region, Selection } from './regions';
-import { scaleColor, shortName } from './colors';
+import { scaleColor, shortName, textColorOn } from './colors';
 import { ALL_SCALES } from './scales';
 import { placeAbove, type Box } from './label-layout';
 
@@ -10,8 +10,10 @@ const PAD_Y = 4;
 const PAD_X = 3;
 const SELECTION_COLOR = '#0a9ecc';
 const LABEL_FONT_SIZE = 11;
-const LABEL_GAP = 3;          // gap between label bottom and the staff / obstacle below
-const LABEL_STEP = LABEL_FONT_SIZE + LABEL_GAP;
+const LABEL_PAD_X = 6;        // horizontal padding inside the pill
+const LABEL_HEIGHT = 16;      // pill height
+const LABEL_GAP = 3;          // gap between pill bottom and the staff / obstacle below
+const LABEL_STEP = LABEL_HEIGHT + LABEL_GAP;
 
 export type OverlayInput = {
 	notes: NoteInfo[];
@@ -82,27 +84,32 @@ function obstacleBoxes(wrapper: SVGGElement): Box[] {
 }
 
 /**
- * Draws a region label, starting just above the staff and moving up only as far as needed
- * to clear abcjs content (dynamics, chord symbols, high notes) and earlier labels.
+ * Draws a region label as a colored pill, starting just above the staff and moving up only as far
+ * as needed to clear abcjs content (dynamics, chord symbols, high notes) and earlier labels.
  */
 function drawLabel(
 	wrapper: SVGGElement, x: number, staffTopY: number, region: Region, color: string,
 	obstacles: Box[], onClick?: (id: string) => void
 ): Box {
 	const scale = ALL_SCALES.find(s => s.name === region.scaleName);
+	const group = el('g', { 'data-region': region.id });
+	group.classList.add('ps-label');
+	group.style.cursor = 'pointer';
 	const text = el('text', {
-		x, y: 0, fill: color, 'font-size': LABEL_FONT_SIZE, 'font-weight': 700,
-		'font-family': 'system-ui, sans-serif', 'data-region': region.id,
+		x: x + LABEL_PAD_X, y: 0, fill: textColorOn(color), 'font-size': LABEL_FONT_SIZE, 'font-weight': 700,
+		'font-family': 'system-ui, sans-serif', 'dominant-baseline': 'central',
 	});
-	text.classList.add('ps-label');
-	text.style.cursor = 'pointer';
 	text.textContent = scale ? shortName(scale) : region.scaleName;
-	if (onClick) text.addEventListener('click', () => onClick(region.id));
-	wrapper.appendChild(text);
-	const width = text.getBBox().width;
-	const wanted: Box = { x, y: staffTopY - LABEL_GAP - LABEL_FONT_SIZE, width, height: LABEL_FONT_SIZE };
+	const pill = el('rect', { x, y: 0, width: 0, height: LABEL_HEIGHT, rx: LABEL_HEIGHT / 2, fill: color });
+	group.append(pill, text);
+	if (onClick) group.addEventListener('click', () => onClick(region.id));
+	wrapper.appendChild(group);
+	const width = text.getBBox().width + 2 * LABEL_PAD_X;
+	const wanted: Box = { x, y: staffTopY - LABEL_GAP - LABEL_HEIGHT, width, height: LABEL_HEIGHT };
 	const placed = placeAbove(wanted, obstacles, LABEL_STEP);
-	text.setAttribute('y', String(placed.y + LABEL_FONT_SIZE - 2)); // baseline; descenders are rare in scale names
+	pill.setAttribute('width', String(width));
+	pill.setAttribute('y', String(placed.y));
+	text.setAttribute('y', String(placed.y + LABEL_HEIGHT / 2));
 	return placed;
 }
 

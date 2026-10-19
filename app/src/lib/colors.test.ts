@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { SCALE_COLORS, scaleColor, shortName } from './colors';
+import { SCALE_COLORS, scaleColor, shortName, textColorOn } from './colors';
 import { ALL_SCALES } from './scales';
 
 describe('SCALE_COLORS', () => {
@@ -27,5 +27,16 @@ describe('shortName', () => {
 		expect(shortName(byName('Bb Dom7 Diminished'))).toBe('Bb7 dim');
 		expect(shortName(byName('C Dom7b5 Diminished'))).toBe('C7b5 dim');
 		expect(shortName(byName('Db Octatonic'))).toBe('Db oct');
+	});
+});
+
+describe('textColorOn', () => {
+	it('uses white text on dark colors and black on light ones', () => {
+		expect(textColorOn('#000000')).toBe('#ffffff');
+		expect(textColorOn('#ffffff')).toBe('#000000');
+		expect(textColorOn('#7741f0')).toBe('#ffffff'); // purple
+		expect(textColorOn('#f09a41')).toBe('#000000'); // orange
+		expect(textColorOn('#efe341')).toBe('#000000'); // yellow
+		expect(textColorOn('#f0295d')).toBe('#ffffff'); // red
 	});
 });

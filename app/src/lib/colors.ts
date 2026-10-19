@@ -35,3 +35,18 @@ const SUFFIX: Record<BarryHarrisScale['type'], string> = {
 export function shortName(scale: BarryHarrisScale): string {
 	return scale.root + SUFFIX[scale.type];
 }
+
+function channel(hex: string, i: number): number {
+	const v = parseInt(hex.slice(1 + 2 * i, 3 + 2 * i), 16) / 255;
+	return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+}
+
+/** WCAG relative luminance of a #rrggbb color, 0 (black) to 1 (white). */
+export function luminance(hex: string): number {
+	return 0.2126 * channel(hex, 0) + 0.7152 * channel(hex, 1) + 0.0722 * channel(hex, 2);
+}
+
+/** Black or white, whichever reads better on the given background. */
+export function textColorOn(hex: string): '#000000' | '#ffffff' {
+	return luminance(hex) < 0.3 ? '#ffffff' : '#000000';
+}
