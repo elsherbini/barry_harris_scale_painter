@@ -25,8 +25,8 @@ const tune = {
 		{ staff: [{ voices: [[
 			fakeNote(10, 0, [60]),
 			{ el_type: 'bar', abselem: { elemset: [] } },
-			fakeNote(40, 0.5, [64, 67]),
-			fakeNote(70, 1, [], { duration: 0.25 }),       // tied continuation: no midi pitches
+			fakeNote(40, 0.5, [64, 67], { pitches: [{ pitch: 2, startTie: true }, { pitch: 4 }] }),
+			fakeNote(70, 1, [], { duration: 0.25, pitches: [{ pitch: 2, endTie: true }] }),   // tied continuation of the E: no midi pitches
 			fakeRest(90, 0.25),                             // onset 1.25, after the continuation
 			fakeRest(95, 0.25, 'invisible'),                // nothing drawn: not indexed
 		]] }, { voices: [[
@@ -41,11 +41,18 @@ const tune = {
 describe('indexTune', () => {
 	const notes = indexTune(tune as any);
 
-	it('keeps sounding notes and visible rests, recording line/staff/voice', () => {
-		expect(notes).toHaveLength(6);
-		expect(notes.map(n => n.line)).toEqual([0, 0, 0, 0, 0, 2]);
-		expect(notes.map(n => n.staff)).toEqual([0, 0, 0, 1, 1, 0]);
-		expect(notes.map(n => n.rest)).toEqual([false, false, true, false, true, false]);
+	it('keeps sounding notes, tied continuations and visible rests, recording line/staff/voice', () => {
+		expect(notes).toHaveLength(7);
+		expect(notes.map(n => n.line)).toEqual([0, 0, 0, 0, 0, 0, 2]);
+		expect(notes.map(n => n.staff)).toEqual([0, 0, 0, 0, 1, 1, 0]);
+		expect(notes.map(n => n.rest)).toEqual([false, false, false, true, false, true, false]);
+	});
+	it('gives a tied continuation the running-time onset and the pitches it holds over', () => {
+		const cont = notes[2];
+		expect(cont.onset).toBe(1);
+		expect(cont.midi).toEqual([64]);
+		expect(cont.pcs).toEqual([4]);
+		expect(cont.cx).toBe(75);
 	});
 
 	it('gives rests an onset from the running time of their voice, with no pitches', () => {
@@ -61,8 +68,8 @@ describe('indexTune', () => {
 		expect(notes[1].cx).toBe(45);
 	});
 
-	it('lineOnsets gives sorted distinct onsets per line, rests included', () => {
-		expect(lineOnsets(notes, 0)).toEqual([0, 0.5, 1.25]);
+	it('lineOnsets gives sorted distinct onsets per line, continuations and rests included', () => {
+		expect(lineOnsets(notes, 0)).toEqual([0, 0.5, 1, 1.25]);
 		expect(lineOnsets(notes, 2)).toEqual([2]);
 	});
 
@@ -71,13 +78,33 @@ describe('indexTune', () => {
 		expect(hit.map(n => n.midi[0])).toEqual([60, 48]);
 	});
 
-	it('notesInSpan includes rests so a span can end on one', () => {
+	it('notesInSpan includes continuations and rests so a span can start or end on one', () => {
 		const hit = notesInSpan(notes, { line: 0, start: 0.5, end: 1.25 });
-		expect(hit.map(n => n.rest)).toEqual([false, true, true]);
+		expect(hit.map(n => n.rest)).toEqual([false, false, true, true]);
+		expect(notesInSpan(notes, { line: 0, start: 1, end: 1 }).map(n => n.midi)).toEqual([[64]]);
 	});
 
 	it('spanFromNotes gives the onset bounds', () => {
-		expect(spanFromNotes(notes.slice(0, 3))).toEqual({ line: 0, start: 0, end: 1.25 });
+		expect(spanFromNotes(notes.slice(0, 4))).toEqual({ line: 0, start: 0, end: 1.25 });
 		expect(spanFromNotes([])).toBeNull();
+	});
+});
+
+describe('indexTune with partially tied chords', () => {
+	// [CE]- [CG]: the C is held over, the G is fresh; abcjs stamps midiPitches only for the G.
+	const tune = { lines: [{ staff: [{ voices: [[
+		fakeNote(10, 0, [60, 64], { pitches: [{ pitch: 0, startTie: true }, { pitch: 2 }] }),
+		fakeNote(40, 0.5, [67], { pitches: [{ pitch: 0, endTie: true }, { pitch: 4 }] }),
+		fakeNote(70, 1, [], { pitches: [{ pitch: 0, endTie: true }] }),   // the C tied a second time
+	]] }] }] };
+	const notes = indexTune(tune as any);
+
+	it('adds the held pitch to the fresh ones, keeping notehead order', () => {
+		expect(notes[1].midi).toEqual([60, 67]);
+		expect(notes[1].onset).toBe(0.5);
+	});
+	it('carries a pitch across a chain of ties', () => {
+		expect(notes[2].midi).toEqual([60]);
+		expect(notes[2].onset).toBe(1);
 	});
 });
