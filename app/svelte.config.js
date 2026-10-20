@@ -5,7 +5,9 @@ import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 const config = {
 	preprocess: vitePreprocess(),
 	kit: {
-		adapter: adapter({ pages: 'build', assets: 'build', fallback: 'index.html', strict: true })
+		adapter: adapter({ pages: 'build', assets: 'build', fallback: 'index.html', strict: true }),
+		// GitHub Pages serves the project site under /barry_harris_scale_painter; dev and plain builds stay at /.
+		paths: { base: process.env.BASE_PATH ?? '' }
 	}
 };
 
