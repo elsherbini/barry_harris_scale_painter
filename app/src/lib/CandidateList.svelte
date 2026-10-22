@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { MatchGroup, ScaleMatch } from '$lib/match';
-	import { scaleColor, shortName } from '$lib/colors';
+	import { scaleColor, shortName, type LabelColorMode } from '$lib/colors';
 	import { pcName, scaleDisplayName, type Accidentals } from '$lib/spelling';
 
 	let {
@@ -8,6 +8,7 @@
 		selectedPcs,
 		hasKey,
 		accidentals = 'flat',
+		labelColors = 'family',
 		currentScaleName = null,
 		onHover,
 		onApply,
@@ -16,6 +17,7 @@
 		selectedPcs: number[];
 		hasKey: boolean;
 		accidentals?: Accidentals;
+		labelColors?: LabelColorMode;
 		currentScaleName?: string | null;
 		onHover: (scaleName: string | null) => void;
 		onApply: (scaleName: string) => void;
@@ -58,7 +60,7 @@
 						<button
 							class="w-full text-left border rounded p-2 hover:bg-neutral-100"
 							class:ring-2={m.scale.name === currentScaleName}
-							style="border-left: 6px solid {scaleColor(m.scale.name)}"
+							style="border-left: 6px solid {scaleColor(m.scale.name, labelColors)}"
 							onmouseenter={() => onHover(m.scale.name)}
 							onmouseleave={() => onHover(null)}
 							onclick={() => onApply(m.scale.name)}

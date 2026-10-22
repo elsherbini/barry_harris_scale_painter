@@ -12,6 +12,7 @@
 	import { drawOverlays } from '$lib/overlay';
 	import type { Region, Selection } from '$lib/regions';
 	import type { Accidentals } from '$lib/spelling';
+	import type { LabelColorMode } from '$lib/colors';
 
 	let {
 		abc,
@@ -21,6 +22,7 @@
 		selection,
 		previewScaleName = null,
 		accidentals = 'flat',
+		labelColors = 'family',
 		onSelect,
 		onLabelClick,
 		onLabelDelete,
@@ -33,6 +35,7 @@
 		selection: Selection | null;
 		previewScaleName?: string | null;
 		accidentals?: Accidentals;
+		labelColors?: LabelColorMode;
 		onSelect: (sel: Selection | null) => void;
 		onLabelClick?: (regionId: string) => void;
 		onLabelDelete?: (regionId: string) => void;
@@ -72,11 +75,11 @@
 		});
 	});
 
-	// Redraw overlays whenever regions / selection / preview / spelling change or after a re-render.
+	// Redraw overlays whenever regions / selection / preview / spelling / label colors change or after a re-render.
 	$effect(() => {
 		renderCount;
 		const currentNotes = notes;
-		const input = { notes: currentNotes, regions, selection, previewScaleName, accidentals };
+		const input = { notes: currentNotes, regions, selection, previewScaleName, accidentals, labelColors };
 		if (!container) return;
 		const svg = container.querySelector('svg') as SVGSVGElement | null;
 		if (!svg) return;

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import StaffView, { type ColorMode, type RenderInfo } from '$lib/StaffView.svelte';
 	import type { Accidentals } from '$lib/spelling';
+	import type { LabelColorMode } from '$lib/colors';
 	import KeySelector from '$lib/KeySelector.svelte';
 	import CandidateList from '$lib/CandidateList.svelte';
 	import RegionList from '$lib/RegionList.svelte';
@@ -22,6 +23,7 @@
 	let view = $state<View>('traditional');
 	let colorMode = $state<ColorMode>('bw');
 	let accidentals = $state<Accidentals>('flat');
+	let labelColors = $state<LabelColorMode>('family');
 	let editorOpen = $state(true);
 
 	let regions = $state<Region[]>([]);
@@ -39,7 +41,7 @@
 	const fragment = createFragmentWriter(300);
 	let shareState = $derived<ShareState>({
 		abc, regions: regions.map(r => ({ line: r.line, start: r.start, end: r.end, scaleName: r.scaleName })),
-		view, colors: colorMode, acc: accidentals, key: keyOverride,
+		view, colors: colorMode, labelColors, acc: accidentals, key: keyOverride,
 	});
 	decodeState(readFragment() ?? '').then(shared => {
 		if (shared) {
@@ -47,6 +49,7 @@
 			regions = shared.regions.map(r => ({ ...r, id: newRegionId() }));
 			view = shared.view;
 			colorMode = shared.colors;
+			labelColors = shared.labelColors;
 			accidentals = shared.acc;
 			keyOverride = shared.key;
 		}
@@ -140,12 +143,12 @@
 	<div class="grid gap-4" style="grid-template-columns: minmax(0, 1fr) 320px;">
 		<div class="space-y-4">
 			{#if view !== 'diminished'}
-				<StaffView {abc} clef="treble" {colorMode} {regions} {selection} {previewScaleName} {accidentals}
+				<StaffView {abc} clef="treble" {colorMode} {regions} {selection} {previewScaleName} {accidentals} {labelColors}
 					onSelect={(s) => (selection = s)} onLabelClick={selectRegion} onLabelDelete={deleteRegion}
 					onRendered={(info) => { trebleRender = info; afterRender(info); }} />
 			{/if}
 			{#if view !== 'traditional'}
-				<StaffView {abc} clef="diminished" {colorMode} {regions} {selection} {previewScaleName} {accidentals}
+				<StaffView {abc} clef="diminished" {colorMode} {regions} {selection} {previewScaleName} {accidentals} {labelColors}
 					onSelect={(s) => (selection = s)} onLabelClick={selectRegion} onLabelDelete={deleteRegion}
 					onRendered={(info) => { dimRender = info; afterRender(info); }} />
 			{/if}
@@ -159,14 +162,23 @@
 						onclick={() => setAccidentals(acc as Accidentals)}>{glyph}</button>
 				{/each}
 			</div>
+			<div class="flex items-center gap-1">
+				<span class="text-neutral-500 mr-1">Label colors:</span>
+				{#each [['family', 'BH family'], ['dim', 'Root dim']] as [mode, label]}
+					<button class="px-2 py-0.5 border rounded" class:bg-neutral-800={labelColors === mode} class:text-white={labelColors === mode}
+						title={mode === 'family' ? 'One of 12 colors per Barry Harris family' : 'Red, blue or yellow by the diminished chord holding the root'}
+						aria-pressed={labelColors === mode}
+						onclick={() => (labelColors = mode as LabelColorMode)}>{label}</button>
+				{/each}
+			</div>
 			<KeySelector {abcKey} override={keyOverride} {accidentals} onChange={(k) => (keyOverride = k)} />
 			<hr />
 			{#if selection && selectedPcs.length}
-				<CandidateList {groups} {selectedPcs} {accidentals} hasKey={!!effectiveKeyChroma}
+				<CandidateList {groups} {selectedPcs} {accidentals} {labelColors} hasKey={!!effectiveKeyChroma}
 					currentScaleName={currentRegion?.scaleName ?? null}
 					onHover={(n) => (previewScaleName = n)} onApply={applyScale} />
 			{:else}
-				<RegionList {regions} {accidentals}
+				<RegionList {regions} {accidentals} {labelColors}
 					onSelect={(r) => (selection = { line: r.line, start: r.start, end: r.end })}
 					onDelete={deleteRegion} />
 			{/if}

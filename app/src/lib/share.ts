@@ -1,5 +1,6 @@
 import { DEFAULT_ABC } from './abc';
 import type { ColorMode } from './StaffView.svelte';
+import type { LabelColorMode } from './colors';
 import type { Accidentals } from './spelling';
 import type { KeyCenter } from './key';
 import type { Span } from './regions';
@@ -14,6 +15,7 @@ export type ShareState = {
 	regions: SharedRegion[];
 	view: View;
 	colors: ColorMode;
+	labelColors: LabelColorMode;
 	acc: Accidentals;
 	key: KeyOverride;
 };
@@ -23,6 +25,7 @@ export const DEFAULT_SHARE_STATE: ShareState = {
 	regions: [],
 	view: 'traditional',
 	colors: 'bw',
+	labelColors: 'family',
 	acc: 'flat',
 	key: null,
 };
@@ -30,6 +33,7 @@ export const DEFAULT_SHARE_STATE: ShareState = {
 const VERSION = 1;
 const VIEWS: View[] = ['traditional', 'diminished', 'side-by-side'];
 const COLORS: ColorMode[] = ['metaharmony', 'bw', 'elements'];
+const LABEL_COLORS: LabelColorMode[] = ['family', 'dim'];
 const ACCS: Accidentals[] = ['flat', 'sharp'];
 
 /** The wire format: regions as [line, start, end, scaleName] tuples. */
@@ -39,13 +43,14 @@ type Doc = {
 	regions: [number, number, number, string][];
 	view: View;
 	colors: ColorMode;
+	labelColors?: LabelColorMode;   // absent in links made before the toggle existed
 	acc: Accidentals;
 	key: KeyOverride;
 };
 
 function isDefault(s: ShareState): boolean {
 	const d = DEFAULT_SHARE_STATE;
-	return s.abc === d.abc && s.regions.length === 0 && s.view === d.view && s.colors === d.colors && s.acc === d.acc && s.key === d.key;
+	return s.abc === d.abc && s.regions.length === 0 && s.view === d.view && s.colors === d.colors && s.labelColors === d.labelColors && s.acc === d.acc && s.key === d.key;
 }
 
 /** Encode the state as a base64url deflate token; the default state becomes '' so the URL stays bare. */
@@ -57,6 +62,7 @@ export async function encodeState(s: ShareState): Promise<string> {
 		regions: s.regions.map(r => [r.line, r.start, r.end, r.scaleName]),
 		view: s.view,
 		colors: s.colors,
+		labelColors: s.labelColors,
 		acc: s.acc,
 		key: s.key,
 	};
@@ -70,6 +76,8 @@ export async function decodeState(token: string): Promise<ShareState | null> {
 	const d = doc as Partial<Doc>;
 	if (d.v !== VERSION || typeof d.abc !== 'string' || !Array.isArray(d.regions)) return null;
 	if (!VIEWS.includes(d.view as View) || !COLORS.includes(d.colors as ColorMode) || !ACCS.includes(d.acc as Accidentals)) return null;
+	const labelColors = d.labelColors ?? 'family';
+	if (!LABEL_COLORS.includes(labelColors)) return null;
 	if (!isKeyOverride(d.key)) return null;
 	const regions: SharedRegion[] = [];
 	for (const t of d.regions) {
@@ -78,7 +86,7 @@ export async function decodeState(token: string): Promise<ShareState | null> {
 		if (typeof line !== 'number' || typeof start !== 'number' || typeof end !== 'number' || typeof scaleName !== 'string') return null;
 		regions.push({ line, start, end, scaleName });
 	}
-	return { abc: d.abc, regions, view: d.view as View, colors: d.colors as ColorMode, acc: d.acc as Accidentals, key: d.key as KeyOverride };
+	return { abc: d.abc, regions, view: d.view as View, colors: d.colors as ColorMode, labelColors, acc: d.acc as Accidentals, key: d.key as KeyOverride };
 }
 
 function isKeyOverride(k: unknown): k is KeyOverride {

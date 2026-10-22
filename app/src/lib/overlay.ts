@@ -1,7 +1,7 @@
 import type { NoteInfo } from './notes-index';
 import { notesInSpan } from './notes-index';
 import { sameSpan, type Region, type Selection } from './regions';
-import { scaleColor, shortName } from './colors';
+import { scaleColor, shortName, type LabelColorMode } from './colors';
 import { ALL_SCALES } from './scales';
 import { placeAbove, type Box } from './label-layout';
 import type { Accidentals } from './spelling';
@@ -23,6 +23,7 @@ export type OverlayInput = {
 	selection: Selection | null;
 	previewScaleName: string | null;   // hovered candidate: tints the selection in that color
 	accidentals?: Accidentals;         // how pill labels spell their root
+	labelColors?: LabelColorMode;      // palette for bands and pills (default: family)
 	onLabelClick?: (regionId: string) => void;
 	onLabelDelete?: (regionId: string) => void;   // the selected region's pill shows an x that calls this
 };
@@ -169,7 +170,7 @@ export function drawOverlays(svg: SVGSVGElement, input: OverlayInput) {
 	};
 	for (const region of input.regions) {
 		const spanNotes = notesInSpan(input.notes, region);
-		const color = scaleColor(region.scaleName);
+		const color = scaleColor(region.scaleName, input.labelColors);
 		const band = drawBand(svg, region.line, spanNotes, color, 0.3, false, region.id);
 		if (!band) continue;
 		const lineObstacles = obstaclesFor(region.line, band.wrapper);
@@ -182,7 +183,7 @@ export function drawOverlays(svg: SVGSVGElement, input: OverlayInput) {
 	}
 	if (input.selection) {
 		const spanNotes = notesInSpan(input.notes, input.selection);
-		const color = input.previewScaleName ? scaleColor(input.previewScaleName) : SELECTION_COLOR;
+		const color = input.previewScaleName ? scaleColor(input.previewScaleName, input.labelColors) : SELECTION_COLOR;
 		drawBand(svg, input.selection.line, spanNotes, color, input.previewScaleName ? 0.3 : 0.15, true, 'selection');
 	}
 }

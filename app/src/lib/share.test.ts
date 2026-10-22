@@ -10,6 +10,7 @@ const full: ShareState = {
 	],
 	view: 'side-by-side',
 	colors: 'metaharmony',
+	labelColors: 'dim',
 	acc: 'sharp',
 	key: { root: 'A', mode: 'minor' },
 };
@@ -51,6 +52,12 @@ describe('encodeState / decodeState', () => {
 		expect(bad).not.toBe('');
 		expect(await decodeState(bad)).toBeNull();
 		expect(await decodeState(token)).not.toBeNull();
+	});
+
+	it('reads links made before the label-color toggle as the family palette', async () => {
+		const { encodeDocument } = await import('./share');
+		const old = await encodeDocument({ v: 1, abc: 'X:1', regions: [], view: 'traditional', colors: 'bw', acc: 'flat', key: null });
+		expect((await decodeState(old))?.labelColors).toBe('family');
 	});
 
 	it('returns null when a region tuple is the wrong shape', async () => {

@@ -1,17 +1,19 @@
 <script lang="ts">
 	import type { Region } from '$lib/regions';
-	import { scaleColor, shortName } from '$lib/colors';
+	import { scaleColor, shortName, type LabelColorMode } from '$lib/colors';
 	import { ALL_SCALES } from '$lib/scales';
 	import type { Accidentals } from '$lib/spelling';
 
 	let {
 		regions,
 		accidentals = 'flat',
+		labelColors = 'family',
 		onSelect,
 		onDelete,
 	}: {
 		regions: Region[];
 		accidentals?: Accidentals;
+		labelColors?: LabelColorMode;
 		onSelect: (region: Region) => void;
 		onDelete: (regionId: string) => void;
 	} = $props();
@@ -27,7 +29,7 @@
 	{/if}
 	<ul class="space-y-1">
 		{#each sorted as r (r.id)}
-			<li class="flex items-center gap-2 border rounded p-2" style="border-left: 6px solid {scaleColor(r.scaleName)}">
+			<li class="flex items-center gap-2 border rounded p-2" style="border-left: 6px solid {scaleColor(r.scaleName, labelColors)}">
 				<button class="flex-1 text-left" onclick={() => onSelect(r)}>
 					<span class="font-medium">{nameOf(r)}</span>
 					<span class="text-xs text-neutral-500 ml-2">line {r.line + 1}, {r.start.toFixed(1)}s to {r.end.toFixed(1)}s</span>

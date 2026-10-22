@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { SCALE_COLORS, scaleColor, shortName } from './colors';
+import { SCALE_COLORS, DIM_COLORS, scaleColor, shortName } from './colors';
 import { ALL_SCALES } from './scales';
 
 describe('SCALE_COLORS', () => {
@@ -16,6 +16,29 @@ describe('SCALE_COLORS', () => {
 
 	it('scales a minor third apart share a color', () => {
 		expect(scaleColor('A Maj6 Diminished')).toBe(scaleColor('Eb Maj6 Diminished'));
+	});
+});
+
+describe('scaleColor by root diminished', () => {
+	it('colors each scale by the dim7 chord containing its root', () => {
+		expect(scaleColor('C Maj6 Diminished', 'dim')).toBe(DIM_COLORS.c);
+		expect(scaleColor('A Min6 Diminished', 'dim')).toBe(DIM_COLORS.c);
+		expect(scaleColor('Db Dom7 Diminished', 'dim')).toBe(DIM_COLORS.db);
+		expect(scaleColor('E Dom7b5 Diminished', 'dim')).toBe(DIM_COLORS.db);
+		expect(scaleColor('D Maj6 Diminished', 'dim')).toBe(DIM_COLORS.d);
+		expect(scaleColor('B Min6 Diminished', 'dim')).toBe(DIM_COLORS.d);
+	});
+
+	it('uses only three colors across all 45 scales, and octatonics keep their family color', () => {
+		expect(new Set(ALL_SCALES.map(s => scaleColor(s.name, 'dim'))).size).toBe(3);
+		for (const n of ['C Octatonic', 'Db Octatonic', 'D Octatonic']) {
+			expect(scaleColor(n, 'dim'), n).not.toBe('#999999');
+		}
+		expect(scaleColor('C Octatonic', 'dim')).toBe(DIM_COLORS.c);
+	});
+
+	it('defaults to the family palette', () => {
+		expect(scaleColor('C Maj6 Diminished')).toBe(scaleColor('C Maj6 Diminished', 'family'));
 	});
 });
 

@@ -1,4 +1,5 @@
-import type { BarryHarrisScale } from './scales';
+import { Note } from 'tonal';
+import { ALL_SCALES, type BarryHarrisScale } from './scales';
 import { spellRoot, type Accidentals } from './spelling';
 
 // Colors from reference_apps/filter_scales/scripts/tag-svg.js (the Excalidraw scale diagram).
@@ -21,8 +22,20 @@ export const SCALE_COLORS: Record<string, string> = Object.fromEntries(
 	Object.entries(FAMILIES).flatMap(([color, names]) => names.map(n => [n, color]))
 );
 
-export function scaleColor(name: string): string {
-	return SCALE_COLORS[name] ?? '#999999';
+/** How region labels are colored: the 12 Barry Harris families, or the 3 diminished chords. */
+export type LabelColorMode = 'family' | 'dim';
+
+// The abcjs fork's metaharmony palette, so labels match the diminished staff's noteheads.
+export const DIM_COLORS = { c: '#d7cc3b', db: '#d82554', d: '#4da2d2' };
+const DIM_BY_CHROMA = [DIM_COLORS.c, DIM_COLORS.db, DIM_COLORS.d];
+
+/** Color of the dim7 chord the scale's root belongs to (C, Db or D diminished). */
+const ROOT_DIM_COLORS: Record<string, string> = Object.fromEntries(
+	ALL_SCALES.map(s => [s.name, DIM_BY_CHROMA[Note.chroma(s.root)! % 3]])
+);
+
+export function scaleColor(name: string, mode: LabelColorMode = 'family'): string {
+	return (mode === 'dim' ? ROOT_DIM_COLORS : SCALE_COLORS)[name] ?? '#999999';
 }
 
 const SUFFIX: Record<BarryHarrisScale['type'], string> = {
