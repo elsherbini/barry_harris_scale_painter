@@ -1,6 +1,6 @@
 import { DEFAULT_ABC } from './abc';
 import type { ColorMode } from './StaffView.svelte';
-import type { LabelColorMode } from './colors';
+import { LABEL_COLOR_MODES, type LabelColorMode } from './colors';
 import type { Accidentals } from './spelling';
 import type { KeyCenter } from './key';
 import type { Span } from './regions';
@@ -33,7 +33,6 @@ export const DEFAULT_SHARE_STATE: ShareState = {
 const VERSION = 1;
 const VIEWS: View[] = ['traditional', 'diminished', 'side-by-side'];
 const COLORS: ColorMode[] = ['metaharmony', 'bw', 'elements'];
-const LABEL_COLORS: LabelColorMode[] = ['family', 'dim'];
 const ACCS: Accidentals[] = ['flat', 'sharp'];
 
 /** The wire format: regions as [line, start, end, scaleName] tuples. */
@@ -77,7 +76,7 @@ export async function decodeState(token: string): Promise<ShareState | null> {
 	if (d.v !== VERSION || typeof d.abc !== 'string' || !Array.isArray(d.regions)) return null;
 	if (!VIEWS.includes(d.view as View) || !COLORS.includes(d.colors as ColorMode) || !ACCS.includes(d.acc as Accidentals)) return null;
 	const labelColors = d.labelColors ?? 'family';
-	if (!LABEL_COLORS.includes(labelColors)) return null;
+	if (!LABEL_COLOR_MODES.includes(labelColors)) return null;
 	if (!isKeyOverride(d.key)) return null;
 	const regions: SharedRegion[] = [];
 	for (const t of d.regions) {

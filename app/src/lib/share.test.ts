@@ -10,7 +10,7 @@ const full: ShareState = {
 	],
 	view: 'side-by-side',
 	colors: 'metaharmony',
-	labelColors: 'dim',
+	labelColors: 'dim-elements',
 	acc: 'sharp',
 	key: { root: 'A', mode: 'minor' },
 };

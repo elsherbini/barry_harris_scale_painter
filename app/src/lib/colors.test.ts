@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { SCALE_COLORS, DIM_COLORS, scaleColor, shortName } from './colors';
+import { SCALE_COLORS, DIM_COLORS, ELEMENTS_DIM_COLORS, scaleColor, shortName } from './colors';
 import { ALL_SCALES } from './scales';
 
 describe('SCALE_COLORS', () => {
@@ -37,8 +37,31 @@ describe('scaleColor by root diminished', () => {
 		expect(scaleColor('C Octatonic', 'dim')).toBe(DIM_COLORS.c);
 	});
 
+	it('elements mode uses the abcjs elements palette: C dim green, Db dim blue, D dim red', () => {
+		expect(ELEMENTS_DIM_COLORS).toEqual({ c: '#3bb34b', db: '#4da2d2', d: '#d82554' });
+		expect(scaleColor('A Min6 Diminished', 'dim-elements')).toBe(ELEMENTS_DIM_COLORS.c);
+		expect(scaleColor('E Dom7b5 Diminished', 'dim-elements')).toBe(ELEMENTS_DIM_COLORS.db);
+		expect(scaleColor('B Min6 Diminished', 'dim-elements')).toBe(ELEMENTS_DIM_COLORS.d);
+		expect(new Set(ALL_SCALES.map(s => scaleColor(s.name, 'dim-elements'))).size).toBe(3);
+	});
+
 	it('defaults to the family palette', () => {
 		expect(scaleColor('C Maj6 Diminished')).toBe(scaleColor('C Maj6 Diminished', 'family'));
+	});
+});
+
+describe('scaleColor in metaharmony mode', () => {
+	it('mixes each diminished primary into a secondary taken from the family palette', () => {
+		// yellow (C dim) roots -> orange, the C6 family color
+		expect(scaleColor('A Min6 Diminished', 'metaharmony')).toBe(SCALE_COLORS['C Maj6 Diminished']);
+		// red (Db dim) roots -> purple, the G6 family color
+		expect(scaleColor('E Dom7b5 Diminished', 'metaharmony')).toBe(SCALE_COLORS['G Maj6 Diminished']);
+		// blue (D dim) roots -> green, the F6 family color
+		expect(scaleColor('B Min6 Diminished', 'metaharmony')).toBe(SCALE_COLORS['F Maj6 Diminished']);
+	});
+
+	it('uses only three colors across all 45 scales', () => {
+		expect(new Set(ALL_SCALES.map(s => scaleColor(s.name, 'metaharmony'))).size).toBe(3);
 	});
 });
 

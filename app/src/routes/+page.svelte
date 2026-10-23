@@ -24,6 +24,12 @@
 	let colorMode = $state<ColorMode>('bw');
 	let accidentals = $state<Accidentals>('flat');
 	let labelColors = $state<LabelColorMode>('family');
+	const LABEL_COLOR_BUTTONS: [LabelColorMode, string, string][] = [
+		['family', 'BH family', 'One of 12 colors per Barry Harris family'],
+		['metaharmony', 'Metaharmony', 'Orange, purple or green: the secondary of the diminished chord holding the root'],
+		['dim', 'Root dim (MH)', 'Yellow, red or blue by the diminished chord holding the root (metaharmony colors)'],
+		['dim-elements', 'Root dim (elements)', 'Green, blue or red by the diminished chord holding the root (elements colors)'],
+	];
 	let editorOpen = $state(true);
 
 	let regions = $state<Region[]>([]);
@@ -162,13 +168,12 @@
 						onclick={() => setAccidentals(acc as Accidentals)}>{glyph}</button>
 				{/each}
 			</div>
-			<div class="flex items-center gap-1">
+			<div class="flex flex-wrap items-center gap-1">
 				<span class="text-neutral-500 mr-1">Label colors:</span>
-				{#each [['family', 'BH family'], ['dim', 'Root dim']] as [mode, label]}
+				{#each LABEL_COLOR_BUTTONS as [mode, label, title]}
 					<button class="px-2 py-0.5 border rounded" class:bg-neutral-800={labelColors === mode} class:text-white={labelColors === mode}
-						title={mode === 'family' ? 'One of 12 colors per Barry Harris family' : 'Red, blue or yellow by the diminished chord holding the root'}
-						aria-pressed={labelColors === mode}
-						onclick={() => (labelColors = mode as LabelColorMode)}>{label}</button>
+						{title} aria-pressed={labelColors === mode}
+						onclick={() => (labelColors = mode)}>{label}</button>
 				{/each}
 			</div>
 			<KeySelector {abcKey} override={keyOverride} {accidentals} onChange={(k) => (keyOverride = k)} />

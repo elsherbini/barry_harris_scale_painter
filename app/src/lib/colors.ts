@@ -22,20 +22,42 @@ export const SCALE_COLORS: Record<string, string> = Object.fromEntries(
 	Object.entries(FAMILIES).flatMap(([color, names]) => names.map(n => [n, color]))
 );
 
-/** How region labels are colored: the 12 Barry Harris families, or the 3 diminished chords. */
-export type LabelColorMode = 'family' | 'dim';
+/**
+ * How region labels are colored: the 12 Barry Harris families, or 3 colors keyed to the
+ * diminished chord holding the scale's root (C, Db or D dim). 'dim' and 'dim-elements' use the
+ * primaries of the abcjs metaharmony and elements palettes; 'metaharmony' uses their secondaries.
+ */
+export type LabelColorMode = 'family' | 'metaharmony' | 'dim' | 'dim-elements';
+export const LABEL_COLOR_MODES: LabelColorMode[] = ['family', 'metaharmony', 'dim', 'dim-elements'];
 
-// The abcjs fork's metaharmony palette, so labels match the diminished staff's noteheads.
-export const DIM_COLORS = { c: '#d7cc3b', db: '#d82554', d: '#4da2d2' };
-const DIM_BY_CHROMA = [DIM_COLORS.c, DIM_COLORS.db, DIM_COLORS.d];
+type DimPalette = { c: string; db: string; d: string };
 
-/** Color of the dim7 chord the scale's root belongs to (C, Db or D diminished). */
-const ROOT_DIM_COLORS: Record<string, string> = Object.fromEntries(
-	ALL_SCALES.map(s => [s.name, DIM_BY_CHROMA[Note.chroma(s.root)! % 3]])
-);
+// The abcjs fork's diminished palettes, so labels match the diminished staff's noteheads.
+export const DIM_COLORS: DimPalette = { c: '#d7cc3b', db: '#d82554', d: '#4da2d2' };
+export const ELEMENTS_DIM_COLORS: DimPalette = { c: '#3bb34b', db: '#4da2d2', d: '#d82554' };
+// Secondaries of the metaharmony primaries, borrowed from the family palette:
+// yellow -> orange (C6), red -> purple (G6), blue -> green (F6).
+const SECONDARY_COLORS: DimPalette = {
+	c: SCALE_COLORS['C Maj6 Diminished'],
+	db: SCALE_COLORS['G Maj6 Diminished'],
+	d: SCALE_COLORS['F Maj6 Diminished'],
+};
+
+/** Color each scale by the dim7 chord its root belongs to. */
+function byRootDim(p: DimPalette): Record<string, string> {
+	const byChroma = [p.c, p.db, p.d];
+	return Object.fromEntries(ALL_SCALES.map(s => [s.name, byChroma[Note.chroma(s.root)! % 3]]));
+}
+
+const PALETTES: Record<LabelColorMode, Record<string, string>> = {
+	family: SCALE_COLORS,
+	metaharmony: byRootDim(SECONDARY_COLORS),
+	dim: byRootDim(DIM_COLORS),
+	'dim-elements': byRootDim(ELEMENTS_DIM_COLORS),
+};
 
 export function scaleColor(name: string, mode: LabelColorMode = 'family'): string {
-	return (mode === 'dim' ? ROOT_DIM_COLORS : SCALE_COLORS)[name] ?? '#999999';
+	return PALETTES[mode][name] ?? '#999999';
 }
 
 const SUFFIX: Record<BarryHarrisScale['type'], string> = {
